@@ -1,0 +1,31 @@
+{
+    "timestamp": "2025-10-24T20:50:16.542733",
+    "model_used": "simple_fallback",
+    "test_set_size": 4774,
+    "metrics": {
+        "accuracy": 0.3889819857561793,
+        "precision": 0.49190301802503766,
+        "recall": 0.4907298984933837,
+        "f1": 0.3869477652017563,
+        "precision_fake": 0.2362604540023895,
+        "recall_fake": 0.687228496959166,
+        "f1_fake": 0.3516336963769726,
+        "precision_real": 0.7475455820476858,
+        "recall_real": 0.29423130002760145,
+        "f1_real": 0.42226183402653994,
+        "roc_auc": 0.48645323475152596,
+        "pr_auc": 0.7516008150420507,
+        "true_negative": "791",
+        "false_positive": "360",
+        "false_negative": "2557",
+        "true_positive": "1066",
+        "false_positive_rate": 0.31277150304083406,
+        "false_negative_rate": 0.7057686999723985,
+        "true_positive_rate": 0.29423130002760145,
+        "true_negative_rate": 0.687228496959166,
+        "balanced_accuracy": 0.4907298984933837,
+        "f2_score": 0.49096407455008184,
+        "mcc": -0.01732741698062853,
+        "cohens_kappa": -0.011228417711545792
+    }
+}

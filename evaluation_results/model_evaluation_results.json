@@ -1,0 +1,32 @@
+{
+    "timestamp": "2025-10-24T21:16:55.147380",
+    "model_used": "simple_fallback",
+    "test_set_size": 4774,
+    "metrics": {
+        "accuracy": 0.6550062840385421,
+        "precision": 0.4941125541125541,
+        "recall": 0.49497754595662957,
+        "f1": 0.4929358219711443,
+        "precision_fake": 0.23160173160173161,
+        "recall_fake": 0.18592528236316247,
+        "f1_fake": 0.20626506024096386,
+        "precision_real": 0.7566233766233766,
+        "recall_real": 0.8040298095500966,
+        "f1_real": 0.7796065837013247,
+        "roc_auc": 0.5030338797426328,
+        "pr_auc": 0.7601799816091765,
+        "true_negative": "214",
+        "false_positive": "937",
+        "false_negative": "710",
+        "true_positive": "2913",
+        "false_positive_rate": 0.8140747176368376,
+        "false_negative_rate": 0.1959701904499034,
+        "true_positive_rate": 0.8040298095500966,
+        "true_negative_rate": 0.18592528236316247,
+        "balanced_accuracy": 0.49497754595662957,
+        "f2_score": 0.4948043053923026,
+        "mcc": -0.010875555416166551,
+        "cohens_kappa": -0.010769504879931988
+    },
+    "performance_interpretation": "FAIR - Model performs adequately"
+}
