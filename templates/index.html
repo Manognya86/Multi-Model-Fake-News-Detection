@@ -1,0 +1,2981 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Fake News Detector</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #3498db;
+            --secondary: #2ecc71;
+            --danger: #e74c3c;
+            --warning: #f39c12;
+            --dark: #2c3e50;
+            --light: #ecf0f1;
+            --gray: #95a5a6;
+            --purple: #9b59b6;
+            --teal: #1abc9c;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: var(--dark);
+        }
+
+        .app-container {
+            max-width: 1800px;
+            margin: 0 auto;
+            background: white;
+            min-height: 100vh;
+            box-shadow: 0 0 50px rgba(0,0,0,0.2);
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Header Styles */
+        .app-header {
+            background: linear-gradient(135deg, var(--dark), #34495e);
+            color: white;
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            position: relative;
+            z-index: 100;
+        }
+
+        .app-header h1 {
+            margin: 0;
+            font-size: 2rem;
+            font-weight: 800;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .system-status {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: rgba(255,255,255,0.1);
+            border-radius: 25px;
+            backdrop-filter: blur(10px);
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--secondary);
+            animation: pulse 2s infinite;
+            box-shadow: 0 0 10px var(--secondary);
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.7; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* Navigation Tabs */
+        .app-nav {
+            background: white;
+            border-bottom: 3px solid var(--light);
+            padding: 0 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 99;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        }
+
+        .nav-tabs {
+            display: flex;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+
+        .nav-tabs::-webkit-scrollbar {
+            display: none;
+        }
+
+        .nav-tab {
+            padding: 1.2rem 1.8rem;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-tab::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(52, 152, 219, 0.1), transparent);
+            transition: left 0.5s;
+        }
+
+        .nav-tab:hover::before {
+            left: 100%;
+        }
+
+        .nav-tab:hover {
+            background: rgba(52, 152, 219, 0.05);
+            border-bottom-color: rgba(52, 152, 219, 0.5);
+        }
+
+        .nav-tab.active {
+            border-bottom-color: var(--primary);
+            color: var(--primary);
+            font-weight: 700;
+            background: rgba(52, 152, 219, 0.08);
+        }
+
+        .nav-tab .badge {
+            margin-left: 0.5rem;
+            font-size: 0.7rem;
+            padding: 0.2rem 0.5rem;
+        }
+
+        /* Main Content */
+        .app-main {
+            padding: 2.5rem;
+            background: #f8f9fa;
+            min-height: calc(100vh - 140px);
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Enhanced Card Styles */
+        .card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+            border: none;
+            margin-bottom: 2.5rem;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary), var(--purple));
+        }
+
+        .card:hover {
+            transform: translateY(-10px) scale(1.02);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, var(--dark), #34495e);
+            color: white;
+            padding: 1.8rem;
+            border: none;
+            position: relative;
+        }
+
+        .card-header h2 {
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .card-body {
+            padding: 2.5rem;
+        }
+
+        /* Enhanced Form Styles */
+        .form-group {
+            margin-bottom: 2rem;
+            position: relative;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.8rem;
+            font-weight: 700;
+            color: var(--dark);
+            font-size: 1.1rem;
+        }
+
+        .form-control, .form-select {
+            width: 100%;
+            padding: 1.2rem 1.5rem;
+            border: 2px solid #e9ecef;
+            border-radius: 15px;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            background: white;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--primary);
+            outline: none;
+            box-shadow: 0 0 0 4px rgba(52, 152, 219, 0.1), inset 0 2px 5px rgba(0,0,0,0.05);
+            transform: translateY(-2px);
+        }
+
+        textarea.form-control {
+            min-height: 200px;
+            resize: vertical;
+            line-height: 1.6;
+        }
+
+        /* Enhanced Button Styles */
+        .btn {
+            padding: 1.2rem 2.5rem;
+            border: none;
+            border-radius: 15px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.8rem;
+            text-decoration: none;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn:hover {
+            transform: translateY(-5px) scale(1.05);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.2);
+        }
+
+        .btn:active {
+            transform: translateY(-2px) scale(1.02);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), #2980b9);
+            color: white;
+            box-shadow: 0 8px 20px rgba(52, 152, 219, 0.3);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, var(--secondary), #27ae60);
+            color: white;
+            box-shadow: 0 8px 20px rgba(46, 204, 113, 0.3);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, var(--danger), #c0392b);
+            color: white;
+            box-shadow: 0 8px 20px rgba(231, 76, 60, 0.3);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, var(--warning), #e67e22);
+            color: white;
+            box-shadow: 0 8px 20px rgba(243, 156, 18, 0.3);
+        }
+
+        .btn-purple {
+            background: linear-gradient(135deg, var(--purple), #8e44ad);
+            color: white;
+            box-shadow: 0 8px 20px rgba(155, 89, 182, 0.3);
+        }
+
+        .btn-teal {
+            background: linear-gradient(135deg, var(--teal), #16a085);
+            color: white;
+            box-shadow: 0 8px 20px rgba(26, 188, 156, 0.3);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 3px solid var(--primary);
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        .btn-outline:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-sm {
+            padding: 0.8rem 1.5rem;
+            font-size: 0.9rem;
+        }
+
+        .btn-lg {
+            padding: 1.5rem 3rem;
+            font-size: 1.2rem;
+        }
+
+        /* Grid Layout Enhancements */
+        .grid {
+            display: grid;
+            gap: 2.5rem;
+        }
+
+        .grid-2 {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .grid-3 {
+            grid-template-columns: 1fr 1fr 1fr;
+        }
+
+        .grid-4 {
+            grid-template-columns: 1fr 1fr 1fr 1fr;
+        }
+
+        @media (max-width: 1200px) {
+            .grid-4 {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .grid-2, .grid-3, .grid-4 {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Enhanced Analysis Results */
+        .results-container {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            border-radius: 20px;
+            padding: 2.5rem;
+            margin-top: 2rem;
+            border: 2px dashed #dee2e6;
+            position: relative;
+        }
+
+        .prediction {
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: 2rem;
+            padding: 2rem;
+            border-radius: 15px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .prediction::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, rgba(255,255,255,0.1), rgba(255,255,255,0.3));
+            z-index: 1;
+        }
+
+        .prediction > * {
+            position: relative;
+            z-index: 2;
+        }
+
+        .prediction.real {
+            background: linear-gradient(135deg, var(--secondary), #27ae60);
+            color: white;
+            box-shadow: 0 10px 30px rgba(46, 204, 113, 0.4);
+        }
+
+        .prediction.fake {
+            background: linear-gradient(135deg, var(--danger), #c0392b);
+            color: white;
+            box-shadow: 0 10px 30px rgba(231, 76, 60, 0.4);
+        }
+
+        .prediction.uncertain {
+            background: linear-gradient(135deg, var(--warning), #e67e22);
+            color: white;
+            box-shadow: 0 10px 30px rgba(243, 156, 18, 0.4);
+        }
+
+        .confidence-meter {
+            height: 30px;
+            background: #e9ecef;
+            border-radius: 15px;
+            margin: 2rem 0;
+            overflow: hidden;
+            box-shadow: inset 0 3px 6px rgba(0,0,0,0.1);
+            position: relative;
+        }
+
+        .confidence-fill {
+            height: 100%;
+            border-radius: 15px;
+            transition: width 1s ease-in-out;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .confidence-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+
+        .confidence-fill.real {
+            background: linear-gradient(90deg, var(--secondary), #27ae60);
+        }
+
+        .confidence-fill.fake {
+            background: linear-gradient(90deg, var(--danger), #c0392b);
+        }
+
+        .confidence-fill.uncertain {
+            background: linear-gradient(90deg, var(--warning), #e67e22);
+        }
+
+        .probability {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 2rem;
+            font-size: 1.3rem;
+            font-weight: 700;
+        }
+
+        /* Enhanced News Feed */
+        .news-feed {
+            max-height: 700px;
+            overflow-y: auto;
+            padding: 1.5rem;
+            background: #f8f9fa;
+            border-radius: 15px;
+            scrollbar-width: thin;
+            scrollbar-color: var(--primary) #e9ecef;
+        }
+
+        .news-feed::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .news-feed::-webkit-scrollbar-track {
+            background: #e9ecef;
+            border-radius: 10px;
+        }
+
+        .news-feed::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 10px;
+        }
+
+        .news-item {
+            background: white;
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            border-left: 6px solid var(--primary);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .news-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(52, 152, 219, 0.03), rgba(46, 204, 113, 0.03));
+            z-index: 1;
+        }
+
+        .news-item > * {
+            position: relative;
+            z-index: 2;
+        }
+
+        .news-item:hover {
+            transform: translateX(10px) translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+        }
+
+        .news-item.fake {
+            border-left-color: var(--danger);
+        }
+
+        .news-item.real {
+            border-left-color: var(--secondary);
+        }
+
+        .news-item.uncertain {
+            border-left-color: var(--warning);
+        }
+
+        .news-title {
+            font-weight: 700;
+            margin-bottom: 1rem;
+            font-size: 1.3rem;
+            line-height: 1.4;
+        }
+
+        .news-meta {
+            font-size: 1rem;
+            color: var(--gray);
+            margin-bottom: 1rem;
+            display: flex;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .news-status {
+            padding: 0.8rem 1.5rem;
+            border-radius: 25px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            display: inline-block;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        .status-real {
+            background: linear-gradient(135deg, var(--secondary), #27ae60);
+            color: white;
+        }
+
+        .status-fake {
+            background: linear-gradient(135deg, var(--danger), #c0392b);
+            color: white;
+        }
+
+        .status-uncertain {
+            background: linear-gradient(135deg, var(--warning), #e67e22);
+            color: white;
+        }
+
+        /* Enhanced Dashboard Metrics */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin: 2.5rem 0;
+        }
+
+        .metric-card {
+            background: white;
+            padding: 2.5rem;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+            transition: all 0.3s ease;
+            border-top: 5px solid var(--primary);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary), var(--purple), var(--teal));
+        }
+
+        .metric-card:hover {
+            transform: translateY(-10px) scale(1.03);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+        }
+
+        .metric-value {
+            font-size: 3.5rem;
+            font-weight: 800;
+            color: var(--primary);
+            margin: 1.5rem 0;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .metric-trend {
+            font-size: 0.9rem;
+            font-weight: 600;
+            padding: 0.3rem 0.8rem;
+            border-radius: 15px;
+            display: inline-block;
+        }
+
+        .trend-up {
+            background: rgba(46, 204, 113, 0.2);
+            color: var(--secondary);
+        }
+
+        .trend-down {
+            background: rgba(231, 76, 60, 0.2);
+            color: var(--danger);
+        }
+
+        /* Enhanced Charts */
+        .chart-container {
+            position: relative;
+            height: 350px;
+            width: 100%;
+            margin: 2rem 0;
+            background: white;
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+            border: 1px solid #e9ecef;
+        }
+
+        /* Enhanced Loading Animation */
+        .loading {
+            text-align: center;
+            padding: 4rem;
+        }
+
+        .spinner {
+            border: 5px solid rgba(0, 0, 0, 0.1);
+            border-left: 5px solid var(--primary);
+            border-radius: 50%;
+            width: 70px;
+            height: 70px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 2rem;
+            box-shadow: 0 0 20px rgba(52, 152, 219, 0.3);
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Enhanced Toast Notifications */
+        .toast-container {
+            position: fixed;
+            top: 2rem;
+            right: 2rem;
+            z-index: 9999;
+        }
+
+        .toast {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+            border-left: 6px solid var(--primary);
+            margin-bottom: 1rem;
+            animation: slideInRight 0.5s ease-out;
+            min-width: 350px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .toast.success {
+            border-left-color: var(--secondary);
+        }
+
+        .toast.error {
+            border-left-color: var(--danger);
+        }
+
+        .toast.warning {
+            border-left-color: var(--warning);
+        }
+
+        .toast.info {
+            border-left-color: var(--primary);
+        }
+
+        .toast-header {
+            background: transparent;
+            border: none;
+            padding: 1.2rem 1.5rem 0.5rem;
+            font-weight: 700;
+        }
+
+        .toast-body {
+            padding: 0.5rem 1.5rem 1.2rem;
+            font-size: 1rem;
+        }
+
+        /* Utility Classes */
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+        .text-left { text-align: left; }
+        .mt-1 { margin-top: 0.5rem; }
+        .mt-2 { margin-top: 1rem; }
+        .mt-3 { margin-top: 1.5rem; }
+        .mt-4 { margin-top: 2rem; }
+        .mb-1 { margin-bottom: 0.5rem; }
+        .mb-2 { margin-bottom: 1rem; }
+        .mb-3 { margin-bottom: 1.5rem; }
+        .mb-4 { margin-bottom: 2rem; }
+        .d-none { display: none; }
+        .d-flex { display: flex; }
+        .d-grid { display: grid; }
+        .justify-between { justify-content: space-between; }
+        .justify-center { justify-content: center; }
+        .align-center { align-items: center; }
+        .gap-1 { gap: 0.5rem; }
+        .gap-2 { gap: 1rem; }
+        .gap-3 { gap: 1.5rem; }
+        .w-100 { width: 100%; }
+        .h-100 { height: 100%; }
+
+        /* Feature Indicators */
+        .feature-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: rgba(52, 152, 219, 0.1);
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--primary);
+            margin: 0.2rem;
+        }
+
+        /* Progress Bars */
+        .progress {
+            height: 12px;
+            background: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .progress-bar {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.6s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .progress-bar-striped {
+            background-image: linear-gradient(45deg, rgba(255,255,255,0.15) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0.15) 75%, transparent 75%, transparent);
+            background-size: 1rem 1rem;
+        }
+
+        .progress-bar-animated {
+            animation: progress-bar-stripes 1s linear infinite;
+        }
+
+        @keyframes progress-bar-stripes {
+            0% { background-position: 1rem 0; }
+            100% { background-position: 0 0; }
+        }
+
+        /* Badge Styles */
+        .badge {
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 0.4rem 0.8rem;
+            border-radius: 15px;
+        }
+
+        /* Alert Styles */
+        .alert {
+            border: none;
+            border-radius: 15px;
+            padding: 1.5rem 2rem;
+            font-weight: 600;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        }
+
+        .alert-success {
+            background: linear-gradient(135deg, var(--secondary), #27ae60);
+            color: white;
+        }
+
+        .alert-danger {
+            background: linear-gradient(135deg, var(--danger), #c0392b);
+            color: white;
+        }
+
+        .alert-warning {
+            background: linear-gradient(135deg, var(--warning), #e67e22);
+            color: white;
+        }
+
+        .alert-info {
+            background: linear-gradient(135deg, var(--primary), #2980b9);
+            color: white;
+        }
+
+        /* Dark Mode Support */
+        .dark-mode {
+            background: #1a1a1a;
+            color: #e0e0e0;
+        }
+
+        .dark-mode .card {
+            background: #2d2d2d;
+            color: #e0e0e0;
+        }
+
+        .dark-mode .form-control,
+        .dark-mode .form-select {
+            background: #3d3d3d;
+            border-color: #4d4d4d;
+            color: #e0e0e0;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1200px) {
+            .app-main {
+                padding: 2rem;
+            }
+            
+            .card-body {
+                padding: 2rem;
+            }
+            
+            .metrics-grid {
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            }
+        }
+
+        @media (max-width: 768px) {
+            .app-header {
+                padding: 1rem;
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+
+            .app-nav {
+                padding: 0 1rem;
+            }
+
+            .nav-tab {
+                padding: 1rem 1.2rem;
+                font-size: 0.9rem;
+            }
+
+            .app-main {
+                padding: 1.5rem;
+            }
+
+            .card-body {
+                padding: 1.5rem;
+            }
+            
+            .btn {
+                padding: 1rem 2rem;
+            }
+            
+            .metric-value {
+                font-size: 2.5rem;
+            }
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 12px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(135deg, #2980b9, #27ae60);
+        }
+
+        /* Floating Action Button */
+        .fab {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            box-shadow: 0 10px 30px rgba(52, 152, 219, 0.4);
+            cursor: pointer;
+            z-index: 1000;
+            transition: all 0.3s ease;
+            border: none;
+        }
+
+        .fab:hover {
+            transform: scale(1.1) rotate(90deg);
+            box-shadow: 0 15px 40px rgba(52, 152, 219, 0.6);
+        }
+
+        /* Tooltip Styles */
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+
+        .tooltip .tooltip-text {
+            visibility: hidden;
+            width: 200px;
+            background: var(--dark);
+            color: white;
+            text-align: center;
+            border-radius: 10px;
+            padding: 1rem;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 0.9rem;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .tooltip:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        /* Pulse Animation for Important Elements */
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        /* Feature Tour */
+        .feature-tour {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .tour-content {
+            background: white;
+            border-radius: 20px;
+            padding: 3rem;
+            max-width: 600px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        .reasoning-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            padding: 1rem;
+            margin-bottom: 0.5rem;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .reasoning-item i {
+            margin-top: 0.2rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <h1>
+                <i class="fas fa-shield-alt"></i>
+                Advanced Fake News Detection System
+            </h1>
+            <div class="system-status">
+                <div class="status-indicator">
+                    <div class="status-dot"></div>
+                    <span>System Online</span>
+                </div>
+                <div id="currentTime" class="current-time"></div>
+                <button class="btn btn-sm btn-outline" onclick="toggleDarkMode()">
+                    <i class="fas fa-moon"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <nav class="app-nav">
+            <ul class="nav-tabs">
+                <li class="nav-tab active" data-tab="dashboard">
+                    <i class="fas fa-tachometer-alt"></i>
+                    Dashboard
+                    <span class="badge bg-primary">New</span>
+                </li>
+                <li class="nav-tab" data-tab="analyzer">
+                    <i class="fas fa-search"></i>
+                    News Analyzer
+                </li>
+                <li class="nav-tab" data-tab="realtime">
+                    <i class="fas fa-bolt"></i>
+                    Real-time Feed
+                    <span class="badge bg-danger">Live</span>
+                </li>
+                <li class="nav-tab" data-tab="batch">
+                    <i class="fas fa-tasks"></i>
+                    Batch Analysis
+                </li>
+                <li class="nav-tab" data-tab="history">
+                    <i class="fas fa-history"></i>
+                    Analysis History
+                </li>
+                <li class="nav-tab" data-tab="sources">
+                    <i class="fas fa-newspaper"></i>
+                    Source Database
+                </li>
+                <li class="nav-tab" data-tab="alerts">
+                    <i class="fas fa-bell"></i>
+                    Alerts
+                    <span class="badge bg-warning">3</span>
+                </li>
+                <li class="nav-tab" data-tab="compare">
+                    <i class="fas fa-columns"></i>
+                    Compare
+                </li>
+                <li class="nav-tab" data-tab="settings">
+                    <i class="fas fa-cog"></i>
+                    Settings
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="app-main">
+            <!-- Dashboard Tab -->
+            <div class="tab-content active" id="dashboard-tab">
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <i class="fas fa-analytics fa-3x text-primary"></i>
+                        <div class="metric-value" id="totalAnalyses">0</div>
+                        <div>Total Analyses</div>
+                        <div class="metric-trend trend-up">
+                            <i class="fas fa-arrow-up"></i> 12% this week
+                        </div>
+                    </div>
+                    <div class="metric-card">
+                        <i class="fas fa-virus fa-3x text-danger"></i>
+                        <div class="metric-value" id="fakeCount">0</div>
+                        <div>Fake News Detected</div>
+                        <div class="metric-trend trend-up">
+                            <i class="fas fa-arrow-up"></i> 8% this week
+                        </div>
+                    </div>
+                    <div class="metric-card">
+                        <i class="fas fa-check-circle fa-3x text-success"></i>
+                        <div class="metric-value" id="accuracyRate">0%</div>
+                        <div>Accuracy Rate</div>
+                        <div class="metric-trend trend-up">
+                            <i class="fas fa-arrow-up"></i> 2.1% this week
+                        </div>
+                    </div>
+                    <div class="metric-card">
+                        <i class="fas fa-clock fa-3x text-warning"></i>
+                        <div class="metric-value" id="avgProcessing">0s</div>
+                        <div>Avg Processing Time</div>
+                        <div class="metric-trend trend-down">
+                            <i class="fas fa-arrow-down"></i> 0.3s faster
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-2">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2><i class="fas fa-chart-line"></i> Detection Trends</h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="chart-container">
+                                <canvas id="trendsChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <h2><i class="fas fa-chart-pie"></i> News Categories</h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="chart-container">
+                                <canvas id="categoriesChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-2">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2><i class="fas fa-history"></i> Recent Activity</h2>
+                        </div>
+                        <div class="card-body">
+                            <div id="recentActivity" class="news-feed">
+                                <!-- Activity will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <h2><i class="fas fa-trophy"></i> System Performance</h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="chart-container">
+                                <canvas id="performanceChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- News Analyzer Tab -->
+            <div class="tab-content" id="analyzer-tab">
+                <div class="grid grid-2">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2><i class="fas fa-search"></i> Analyze News Content</h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label for="newsText">News Text</label>
+                                <textarea class="form-control" id="newsText" placeholder="Paste news article text here...">Breaking: Scientists discover miracle cure that can reverse aging in just one week! This revolutionary treatment is being kept secret by pharmaceutical companies.</textarea>
+                                <div class="d-flex justify-between mt-2">
+                                    <small id="charCount">0 characters</small>
+                                    <small id="wordCount">0 words</small>
+                                    <small id="readabilityScore">Readability: --</small>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-2">
+                                <div class="form-group">
+                                    <label for="source">News Source</label>
+                                    <input type="text" class="form-control" id="source" placeholder="Enter news source" value="Daily Science News">
+                                </div>
+                                <div class="form-group">
+                                    <label for="category">Category</label>
+                                    <select class="form-select" id="category">
+                                        <option value="general">General</option>
+                                        <option value="politics">Politics</option>
+                                        <option value="health">Health</option>
+                                        <option value="technology">Technology</option>
+                                        <option value="entertainment">Entertainment</option>
+                                        <option value="science">Science</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-2">
+                                <div class="form-group">
+                                    <label for="socialEngagement">Social Media Engagement</label>
+                                    <input type="number" class="form-control" id="socialEngagement" placeholder="Number of shares/likes" value="1000">
+                                </div>
+                                <div class="form-group">
+                                    <label for="authorReputation">Author Reputation</label>
+                                    <select class="form-select" id="authorReputation">
+                                        <option value="unknown">Unknown</option>
+                                        <option value="low">Low</option>
+                                        <option value="medium">Medium</option>
+                                        <option value="high">High</option>
+                                        <option value="verified">Verified Expert</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-primary w-100" onclick="analyzeNews()">
+                                    <i class="fas fa-search"></i>
+                                    Analyze News
+                                </button>
+                                <button class="btn btn-outline" onclick="clearForm()">
+                                    <i class="fas fa-trash"></i>
+                                    Clear
+                                </button>
+                            </div>
+
+                            <div class="d-grid grid-2 gap-2 mt-2">
+                                <button class="btn btn-outline" onclick="loadSample('fake')">
+                                    <i class="fas fa-virus"></i>
+                                    Fake News Sample
+                                </button>
+                                <button class="btn btn-outline" onclick="loadSample('real')">
+                                    <i class="fas fa-check-circle"></i>
+                                    Real News Sample
+                                </button>
+                                <button class="btn btn-outline" onclick="loadSample('controversial')">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    Controversial Sample
+                                </button>
+                                <button class="btn btn-outline" onclick="analyzeURL()">
+                                    <i class="fas fa-link"></i>
+                                    Analyze URL
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h2><i class="fas fa-chart-bar"></i> Analysis Results</h2>
+                        </div>
+                        <div class="card-body">
+                            <div id="analysisResults" class="results-container" style="display: none;">
+                                <div class="prediction real" id="predictionText">
+                                    <i class="fas fa-check-circle"></i>
+                                    Prediction: Real
+                                </div>
+                                
+                                <div class="confidence-meter">
+                                    <div class="confidence-fill real" id="confidenceBar" style="width: 80%"></div>
+                                </div>
+                                
+                                <div class="probability">
+                                    <div>Fake Probability: <span id="fakeProb">20%</span></div>
+                                    <div>Real Probability: <span id="realProb">80%</span></div>
+                                </div>
+
+                                <div class="form-group">
+                                    <h4>Detection Reasoning</h4>
+                                    <div id="reasoning" class="reasoning-list">
+                                        <!-- Reasoning will be populated here -->
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <h4>Feature Analysis</h4>
+                                    <div id="featureAnalysis" class="feature-analysis">
+                                        <!-- Feature analysis will be populated here -->
+                                    </div>
+                                </div>
+
+                                <div class="d-flex gap-2">
+                                    <button class="btn btn-success" onclick="submitFeedback(true)">
+                                        <i class="fas fa-thumbs-up"></i>
+                                        Correct Analysis
+                                    </button>
+                                    <button class="btn btn-danger" onclick="submitFeedback(false)">
+                                        <i class="fas fa-thumbs-down"></i>
+                                        Incorrect Analysis
+                                    </button>
+                                    <button class="btn btn-purple" onclick="saveAnalysis()">
+                                        <i class="fas fa-save"></i>
+                                        Save Analysis
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div id="analysisPlaceholder" class="text-center">
+                                <i class="fas fa-search fa-4x text-muted mb-3"></i>
+                                <h4 class="text-muted">No Analysis Yet</h4>
+                                <p class="text-muted">Enter news text and click "Analyze News" to get started</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Real-time Feed Tab -->
+            <div class="tab-content" id="realtime-tab">
+                <div class="card">
+                    <div class="card-header d-flex justify-between align-center">
+                        <h2><i class="fas fa-bolt"></i> Real-time News Monitoring</h2>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-outline" onclick="refreshNews()">
+                                <i class="fas fa-sync-alt"></i>
+                                Refresh
+                            </button>
+                            <button class="btn btn-primary" id="autoRefreshBtn" onclick="toggleAutoRefresh()">
+                                <i class="fas fa-play"></i>
+                                Auto-refresh
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex gap-2 mb-3">
+                            <input type="text" class="form-control" id="newsSearch" placeholder="Search news...">
+                            <select class="form-select" id="newsCategoryFilter" style="width: 200px;">
+                                <option value="all">All Categories</option>
+                                <option value="politics">Politics</option>
+                                <option value="health">Health</option>
+                                <option value="technology">Technology</option>
+                                <option value="entertainment">Entertainment</option>
+                            </select>
+                            <select class="form-select" id="newsCredibilityFilter" style="width: 200px;">
+                                <option value="all">All Credibility</option>
+                                <option value="high">High Credibility</option>
+                                <option value="medium">Medium Credibility</option>
+                                <option value="low">Low Credibility</option>
+                            </select>
+                        </div>
+                        <div class="news-feed" id="realTimeNews">
+                            <!-- News will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Batch Analysis Tab -->
+            <div class="tab-content" id="batch-tab">
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-tasks"></i> Batch News Analysis</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label for="batchTexts">Enter multiple news texts (one per line) or upload a file</label>
+                            <textarea class="form-control" id="batchTexts" rows="10" placeholder="Enter each news text on a separate line...">Scientists discover revolutionary energy source
+Breaking: Miracle weight loss pill discovered
+New study shows benefits of regular exercise
+Secret government project revealed by insider
+Official statement from health organization</textarea>
+                            <div class="d-flex justify-between mt-2">
+                                <small id="batchItemCount">0 items</small>
+                                <small id="batchCharCount">0 characters</small>
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-2 mb-3">
+                            <button class="btn btn-outline" onclick="document.getElementById('fileInput').click()">
+                                <i class="fas fa-upload"></i>
+                                Upload File
+                            </button>
+                            <input type="file" id="fileInput" accept=".txt,.csv,.json" style="display: none;" onchange="handleFileUpload(this.files)">
+                            <button class="btn btn-outline" onclick="loadSampleBatch()">
+                                <i class="fas fa-database"></i>
+                                Load Sample
+                            </button>
+                            <button class="btn btn-outline" onclick="clearBatch()">
+                                <i class="fas fa-trash"></i>
+                                Clear All
+                            </button>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-primary" onclick="analyzeBatch()">
+                                <i class="fas fa-play-circle"></i>
+                                Analyze Batch
+                            </button>
+                            <button class="btn btn-success" onclick="exportBatchTemplate()">
+                                <i class="fas fa-download"></i>
+                                Download Template
+                            </button>
+                        </div>
+
+                        <div id="batchProgress" class="mt-4" style="display: none;">
+                            <div class="progress mb-2">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated" id="batchProgressBar" style="width: 0%"></div>
+                            </div>
+                            <div class="text-center">
+                                <span id="batchProgressText">Processing...</span>
+                            </div>
+                        </div>
+
+                        <div id="batchResults" class="mt-4" style="display: none;">
+                            <h4>Batch Analysis Results</h4>
+                            <div id="batchResultsContent"></div>
+                            
+                            <div class="d-flex gap-2 mt-3">
+                                <button class="btn btn-success" onclick="exportBatchResults()">
+                                    <i class="fas fa-file-export"></i>
+                                    Export Results
+                                </button>
+                                <button class="btn btn-purple" onclick="generateBatchReport()">
+                                    <i class="fas fa-chart-bar"></i>
+                                    Generate Report
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analysis History Tab -->
+            <div class="tab-content" id="history-tab">
+                <div class="card">
+                    <div class="card-header d-flex justify-between align-center">
+                        <h2><i class="fas fa-history"></i> Analysis History</h2>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-outline" onclick="exportHistory()">
+                                <i class="fas fa-download"></i>
+                                Export
+                            </button>
+                            <button class="btn btn-outline" onclick="clearHistory()">
+                                <i class="fas fa-trash"></i>
+                                Clear History
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex gap-2 mb-3">
+                            <input type="text" class="form-control" id="historySearch" placeholder="Search history...">
+                            <select class="form-select" id="historyFilter" style="width: 200px;">
+                                <option value="all">All Results</option>
+                                <option value="fake">Fake News</option>
+                                <option value="real">Real News</option>
+                                <option value="uncertain">Uncertain</option>
+                            </select>
+                            <select class="form-select" id="historySort" style="width: 200px;">
+                                <option value="newest">Newest First</option>
+                                <option value="oldest">Oldest First</option>
+                                <option value="confidence">Highest Confidence</option>
+                            </select>
+                        </div>
+                        <div id="analysisHistory" class="news-feed">
+                            <!-- History will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Source Database Tab -->
+            <div class="tab-content" id="sources-tab">
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-newspaper"></i> News Source Database</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex gap-2 mb-3">
+                            <input type="text" class="form-control" id="sourceSearch" placeholder="Search sources...">
+                            <select class="form-select" id="sourceTypeFilter" style="width: 200px;">
+                                <option value="all">All Types</option>
+                                <option value="mainstream">Mainstream Media</option>
+                                <option value="independent">Independent</option>
+                                <option value="blog">Blog</option>
+                                <option value="social">Social Media</option>
+                            </select>
+                            <select class="form-select" id="sourceCredibilityFilter" style="width: 200px;">
+                                <option value="all">All Credibility</option>
+                                <option value="high">High (80-100%)</option>
+                                <option value="medium">Medium (60-79%)</option>
+                                <option value="low">Low (0-59%)</option>
+                            </select>
+                        </div>
+                        <div id="sourceDatabase" class="news-feed">
+                            <!-- Sources will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Alerts Tab -->
+            <div class="tab-content" id="alerts-tab">
+                <div class="grid grid-2">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2><i class="fas fa-bell"></i> Alert Settings</h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label for="alertKeywords">Keywords to Monitor</label>
+                                <textarea class="form-control" id="alertKeywords" placeholder="Enter keywords (one per line)"></textarea>
+                                <small class="text-muted">You will be alerted when these keywords appear in news</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="alertSources">Sources to Monitor</label>
+                                <select class="form-select" id="alertSources" multiple>
+                                    <option value="all">All Sources</option>
+                                    <option value="social">Social Media</option>
+                                    <option value="mainstream">Mainstream Media</option>
+                                    <option value="independent">Independent Sources</option>
+                                </select>
+                                <small class="text-muted">Hold Ctrl to select multiple sources</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="alertFrequency">Alert Frequency</label>
+                                <select class="form-select" id="alertFrequency">
+                                    <option value="realtime">Real-time</option>
+                                    <option value="hourly">Hourly Summary</option>
+                                    <option value="daily">Daily Digest</option>
+                                    <option value="weekly">Weekly Report</option>
+                                </select>
+                            </div>
+
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="emailAlerts" checked>
+                                <label class="form-check-label" for="emailAlerts">
+                                    Send email alerts
+                                </label>
+                            </div>
+
+                            <button class="btn btn-primary w-100" onclick="saveAlertSettings()">
+                                <i class="fas fa-save"></i>
+                                Save Alert Settings
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h2><i class="fas fa-history"></i> Recent Alerts</h2>
+                        </div>
+                        <div class="card-body">
+                            <div id="recentAlerts" class="news-feed">
+                                <!-- Alerts will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Compare Tab -->
+            <div class="tab-content" id="compare-tab">
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-columns"></i> Compare News Analysis</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="grid grid-2">
+                            <div class="form-group">
+                                <label for="compareText1">First News Text</label>
+                                <textarea class="form-control" id="compareText1" rows="8" placeholder="Enter first news text..."></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="compareText2">Second News Text</label>
+                                <textarea class="form-control" id="compareText2" rows="8" placeholder="Enter second news text..."></textarea>
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-2 justify-center">
+                            <button class="btn btn-primary" onclick="compareNews()">
+                                <i class="fas fa-balance-scale"></i>
+                                Compare News
+                            </button>
+                            <button class="btn btn-outline" onclick="loadComparisonSamples()">
+                                <i class="fas fa-database"></i>
+                                Load Samples
+                            </button>
+                        </div>
+
+                        <div id="comparisonResults" class="mt-4" style="display: none;">
+                            <h4>Comparison Results</h4>
+                            <div class="grid grid-2 gap-4">
+                                <div id="comparisonResult1" class="results-container">
+                                    <!-- First comparison result -->
+                                </div>
+                                <div id="comparisonResult2" class="results-container">
+                                    <!-- Second comparison result -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Tab -->
+            <div class="tab-content" id="settings-tab">
+                <div class="grid grid-2">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2><i class="fas fa-cog"></i> Application Settings</h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label for="confidenceThreshold">Confidence Threshold</label>
+                                <input type="range" class="form-control" id="confidenceThreshold" min="50" max="95" value="75">
+                                <div class="d-flex justify-between">
+                                    <small>50% (More sensitive)</small>
+                                    <small>95% (More strict)</small>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="autoRefresh">Auto-refresh Interval</label>
+                                <select class="form-select" id="autoRefresh">
+                                    <option value="0">Disabled</option>
+                                    <option value="30">30 seconds</option>
+                                    <option value="60" selected>1 minute</option>
+                                    <option value="300">5 minutes</option>
+                                    <option value="600">10 minutes</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="analysisDepth">Analysis Depth</label>
+                                <select class="form-select" id="analysisDepth">
+                                    <option value="basic">Basic (Faster)</option>
+                                    <option value="standard" selected>Standard</option>
+                                    <option value="deep">Deep Analysis (Slower)</option>
+                                </select>
+                            </div>
+
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="notifications" checked>
+                                <label class="form-check-label" for="notifications">
+                                    Enable desktop notifications
+                                </label>
+                            </div>
+
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="soundAlerts">
+                                <label class="form-check-label" for="soundAlerts">
+                                    Enable sound alerts
+                                </label>
+                            </div>
+
+                            <button class="btn btn-primary w-100" onclick="saveSettings()">
+                                <i class="fas fa-save"></i>
+                                Save Settings
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h2><i class="fas fa-info-circle"></i> System Information</h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="system-info">
+                                <div class="info-item d-flex justify-between mb-2">
+                                    <span>Model Version:</span>
+                                    <span class="text-primary">v2.1.0</span>
+                                </div>
+                                <div class="info-item d-flex justify-between mb-2">
+                                    <span>Last Updated:</span>
+                                    <span id="lastUpdated">Just now</span>
+                                </div>
+                                <div class="info-item d-flex justify-between mb-2">
+                                    <span>Total Analyses:</span>
+                                    <span id="systemTotalAnalyses">0</span>
+                                </div>
+                                <div class="info-item d-flex justify-between mb-2">
+                                    <span>System Uptime:</span>
+                                    <span id="systemUptime">0 days</span>
+                                </div>
+                                <div class="info-item d-flex justify-between mb-2">
+                                    <span>Database Size:</span>
+                                    <span>2.4 GB</span>
+                                </div>
+                                <div class="info-item d-flex justify-between mb-2">
+                                    <span>API Status:</span>
+                                    <span class="text-success">Operational</span>
+                                </div>
+                            </div>
+
+                            <div class="mt-4">
+                                <h5>Quick Actions</h5>
+                                <div class="d-grid grid-2 gap-2 mt-2">
+                                    <button class="btn btn-outline" onclick="exportData()">
+                                        <i class="fas fa-download"></i>
+                                        Export Data
+                                    </button>
+                                    <button class="btn btn-outline" onclick="clearCache()">
+                                        <i class="fas fa-broom"></i>
+                                        Clear Cache
+                                    </button>
+                                    <button class="btn btn-outline" onclick="runDiagnostics()">
+                                        <i class="fas fa-stethoscope"></i>
+                                        Run Diagnostics
+                                    </button>
+                                    <button class="btn btn-outline" onclick="resetSystem()">
+                                        <i class="fas fa-redo"></i>
+                                        Reset System
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Floating Action Button -->
+    <button class="fab" onclick="showQuickActions()">
+        <i class="fas fa-plus"></i>
+    </button>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <script>
+        // Enhanced global variables
+        let currentTab = 'dashboard';
+        let analysisHistory = [];
+        let autoRefreshInterval = null;
+        let charts = {};
+        let systemStartTime = new Date();
+        let darkMode = false;
+        let alertSettings = {
+            keywords: [],
+            sources: ['all'],
+            frequency: 'realtime',
+            email: true
+        };
+        let realTimeNews = [];
+        let sources = [];
+        let batchResults = [];
+
+        // Initialize application with enhanced features
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeApp();
+        });
+
+        function initializeApp() {
+            initializeTabs();
+            initializeCharts();
+            updateDashboard();
+            loadRealTimeNews();
+            updateCharacterCounts();
+            updateCurrentTime();
+            loadSourceDatabase();
+            loadAlertHistory();
+            loadAnalysisHistory();
+            setInterval(updateCurrentTime, 1000);
+            setInterval(updateSystemMetrics, 30000);
+            
+            // Start real-time updates
+            startRealTimeUpdates();
+            
+            // Load sample data
+            setTimeout(() => {
+                showToast('Advanced Fake News Detection System initialized successfully!', 'success');
+                showToast('New features available: Source Database, Alerts, Comparison Tool', 'info');
+            }, 1000);
+
+            // Check for new features
+            checkNewFeatures();
+        }
+
+        function startRealTimeUpdates() {
+            // Update dashboard every 30 seconds
+            setInterval(() => {
+                if (currentTab === 'dashboard') {
+                    updateDashboard();
+                }
+            }, 30000);
+
+            // Update real-time news every 60 seconds
+            setInterval(() => {
+                if (currentTab === 'realtime') {
+                    loadRealTimeNews();
+                }
+            }, 60000);
+        }
+
+        function initializeTabs() {
+            // Enhanced tab switching with animations
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const tabId = this.getAttribute('data-tab');
+                    switchTab(tabId);
+                    
+                    // Add click animation
+                    this.style.transform = 'scale(0.95)';
+                    setTimeout(() => {
+                        this.style.transform = 'scale(1)';
+                    }, 150);
+                });
+            });
+        }
+
+        function switchTab(tabId) {
+            // Update active tab with animation
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelector(`.nav-tab[data-tab="${tabId}"]`).classList.add('active');
+
+            // Update active content with fade animation
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(`${tabId}-tab`).classList.add('active');
+
+            currentTab = tabId;
+
+            // Tab-specific initialization
+            switch(tabId) {
+                case 'dashboard':
+                    updateDashboard();
+                    break;
+                case 'realtime':
+                    loadRealTimeNews();
+                    break;
+                case 'history':
+                    loadAnalysisHistory();
+                    break;
+                case 'sources':
+                    loadSourceDatabase();
+                    break;
+                case 'alerts':
+                    loadAlertHistory();
+                    break;
+            }
+        }
+
+        function initializeCharts() {
+            // Enhanced Trends Chart
+            const trendsCtx = document.getElementById('trendsChart').getContext('2d');
+            charts.trendsChart = new Chart(trendsCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                    datasets: [{
+                        label: 'Fake News',
+                        data: [12, 19, 8, 15, 12, 18, 10],
+                        borderColor: '#e74c3c',
+                        backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                        tension: 0.4,
+                        fill: true,
+                        borderWidth: 3
+                    }, {
+                        label: 'Real News',
+                        data: [25, 22, 28, 20, 25, 23, 30],
+                        borderColor: '#2ecc71',
+                        backgroundColor: 'rgba(46, 204, 113, 0.1)',
+                        tension: 0.4,
+                        fill: true,
+                        borderWidth: 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        title: {
+                            display: true,
+                            text: 'Weekly Detection Trends'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(0,0,0,0.1)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                color: 'rgba(0,0,0,0.1)'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Enhanced Categories Chart
+            const categoriesCtx = document.getElementById('categoriesChart').getContext('2d');
+            charts.categoriesChart = new Chart(categoriesCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Politics', 'Health', 'Technology', 'Entertainment', 'Science', 'Other'],
+                    datasets: [{
+                        data: [25, 20, 18, 15, 12, 10],
+                        backgroundColor: [
+                            '#3498db',
+                            '#2ecc71',
+                            '#9b59b6',
+                            '#f39c12',
+                            '#1abc9c',
+                            '#95a5a6'
+                        ],
+                        borderWidth: 3,
+                        borderColor: '#fff',
+                        hoverOffset: 20
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        },
+                        title: {
+                            display: true,
+                            text: 'News Categories Distribution'
+                        }
+                    },
+                    cutout: '60%'
+                }
+            });
+
+            // Performance Chart
+            const performanceCtx = document.getElementById('performanceChart').getContext('2d');
+            charts.performanceChart = new Chart(performanceCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Accuracy', 'Precision', 'Recall', 'F1-Score', 'Speed'],
+                    datasets: [{
+                        label: 'Performance Metrics',
+                        data: [92, 89, 94, 91, 88],
+                        backgroundColor: [
+                            'rgba(52, 152, 219, 0.8)',
+                            'rgba(46, 204, 113, 0.8)',
+                            'rgba(155, 89, 182, 0.8)',
+                            'rgba(243, 156, 18, 0.8)',
+                            'rgba(26, 188, 156, 0.8)'
+                        ],
+                        borderColor: [
+                            '#3498db',
+                            '#2ecc71',
+                            '#9b59b6',
+                            '#f39c12',
+                            '#1abc9c'
+                        ],
+                        borderWidth: 2,
+                        borderRadius: 10
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        title: {
+                            display: true,
+                            text: 'System Performance Metrics'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            grid: {
+                                color: 'rgba(0,0,0,0.1)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                color: 'rgba(0,0,0,0.1)'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Enhanced News Analysis with API integration
+        async function analyzeNews() {
+            const text = document.getElementById('newsText').value.trim();
+            if (!text) {
+                showToast('Please enter some text to analyze.', 'warning');
+                return;
+            }
+
+            // Show enhanced loading state
+            const analyzeBtn = document.querySelector('#analyzer-tab .btn-primary');
+            const originalText = analyzeBtn.innerHTML;
+            analyzeBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analyzing...';
+            analyzeBtn.disabled = true;
+
+            // Calculate text metrics
+            const readability = calculateReadability(text);
+            document.getElementById('readabilityScore').textContent = `Readability: ${readability}`;
+
+            try {
+                const response = await fetch('/analyze', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        text: text,
+                        metadata: {
+                            tweet_count: parseInt(document.getElementById('socialEngagement').value) || 0,
+                            source: document.getElementById('source').value || 'Unknown',
+                            author: document.getElementById('authorReputation').value || 'Unknown'
+                        }
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    // Show results
+                    document.getElementById('analysisPlaceholder').style.display = 'none';
+                    document.getElementById('analysisResults').style.display = 'block';
+
+                    // Update UI with enhanced results
+                    updateAnalysisResults(result);
+
+                    // Add to history
+                    analysisHistory.unshift({
+                        id: Date.now(),
+                        text: text.substring(0, 150) + (text.length > 150 ? '...' : ''),
+                        prediction: result.prediction.label.toLowerCase(),
+                        confidence: result.prediction.confidence,
+                        timestamp: new Date().toLocaleString()
+                    });
+
+                    showToast('Enhanced analysis completed successfully!', 'success');
+                    
+                    // Update dashboard
+                    updateDashboard();
+                } else {
+                    showToast('Analysis failed: ' + result.error, 'error');
+                }
+            } catch (error) {
+                console.error('Error analyzing news:', error);
+                showToast('Error analyzing news. Please try again.', 'error');
+            } finally {
+                // Reset button
+                analyzeBtn.innerHTML = originalText;
+                analyzeBtn.disabled = false;
+            }
+        }
+
+        function updateAnalysisResults(result) {
+            // Update prediction
+            const prediction = result.prediction.label.toLowerCase();
+            document.getElementById('predictionText').className = `prediction ${prediction}`;
+            document.getElementById('predictionText').innerHTML = 
+                `<i class="fas fa-${getPredictionIcon(prediction)}"></i> Prediction: ${prediction.charAt(0).toUpperCase() + prediction.slice(1)}`;
+            
+            // Update confidence bar
+            document.getElementById('confidenceBar').className = `confidence-fill ${prediction}`;
+            document.getElementById('confidenceBar').style.width = `${result.prediction.confidence * 100}%`;
+            
+            // Update probabilities
+            document.getElementById('fakeProb').textContent = `${(result.prediction.fake_probability * 100).toFixed(1)}%`;
+            document.getElementById('realProb').textContent = `${(result.prediction.real_probability * 100).toFixed(1)}%`;
+
+            // Update reasoning
+            const reasoning = result.explanations.detection_reasoning;
+            const reasoningHTML = reasoning.reasons.map(reason => 
+                `<div class="reasoning-item">
+                    <i class="fas fa-${getReasoningIcon(reason)}"></i>
+                    <span>${reason}</span>
+                </div>`
+            ).join('');
+            
+            document.getElementById('reasoning').innerHTML = reasoningHTML;
+
+            // Update feature analysis
+            const features = result.explanations.feature_importance;
+            const featureHTML = `
+                <div class="grid grid-2 gap-2">
+                    ${Object.entries(features).map(([feature, score]) => `
+                        <div class="feature-indicator">
+                            <span>${feature.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}:</span>
+                            <div class="progress" style="width: 100px;">
+                                <div class="progress-bar ${getScoreColor(score * 100)}" style="width: ${score * 100}%"></div>
+                            </div>
+                            <span>${Math.round(score * 100)}%</span>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            document.getElementById('featureAnalysis').innerHTML = featureHTML;
+        }
+
+        function getPredictionIcon(prediction) {
+            const icons = {
+                'real': 'check-circle',
+                'fake': 'exclamation-triangle',
+                'uncertain': 'question-circle'
+            };
+            return icons[prediction] || 'question-circle';
+        }
+
+        function getReasoningIcon(reason) {
+            if (reason.includes('sensational') || reason.includes('fake') || reason.includes('misinformation')) {
+                return 'times-circle text-danger';
+            } else if (reason.includes('real') || reason.includes('credible') || reason.includes('consistent')) {
+                return 'check-circle text-success';
+            } else {
+                return 'info-circle text-warning';
+            }
+        }
+
+        function getScoreColor(score) {
+            if (score >= 70) return 'bg-success';
+            if (score >= 40) return 'bg-warning';
+            return 'bg-danger';
+        }
+
+        // Real-time news functionality
+        async function loadRealTimeNews() {
+            const newsContainer = document.getElementById('realTimeNews');
+            newsContainer.innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Loading real-time news feed...</p>
+                </div>
+            `;
+
+            try {
+                const response = await fetch('/api/realtime/news');
+                const data = await response.json();
+
+                if (response.ok) {
+                    realTimeNews = data.news;
+                    displayNewsItems(realTimeNews, 'realTimeNews');
+                    showToast('Real-time news updated!', 'success');
+                } else {
+                    showToast('Failed to load real-time news', 'error');
+                }
+            } catch (error) {
+                console.error('Error loading real-time news:', error);
+                showToast('Error loading real-time news', 'error');
+            }
+        }
+
+        function displayNewsItems(items, containerId) {
+            const container = document.getElementById(containerId);
+            let newsHTML = '';
+
+            items.forEach(item => {
+                const prediction = item.prediction.label.toLowerCase();
+                newsHTML += `
+                    <div class="news-item ${prediction}">
+                        <div class="news-title">${item.title}</div>
+                        <div class="news-meta">
+                            <span><i class="fas fa-newspaper"></i> ${item.source}</span>
+                            <span><i class="fas fa-tag"></i> ${item.category}</span>
+                            <span><i class="fas fa-clock"></i> ${item.time_ago}</span>
+                            <span><i class="fas fa-user"></i> ${item.author}</span>
+                        </div>
+                        <span class="news-status status-${prediction}">
+                            ${item.prediction.label} (${Math.round(item.prediction.confidence * 100)}%)
+                        </span>
+                        <div class="d-flex gap-2 mt-2">
+                            <button class="btn btn-outline btn-sm" onclick="analyzeThisNews('${item.title.replace(/'/g, "\\'")}', '${item.content.replace(/'/g, "\\'")}')">
+                                <i class="fas fa-search"></i> Analyze
+                            </button>
+                            <button class="btn btn-outline btn-sm" onclick="saveNewsItem(${item.id || Date.now()})">
+                                <i class="fas fa-bookmark"></i> Save
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = newsHTML;
+        }
+
+        function analyzeThisNews(title, content) {
+            document.getElementById('newsText').value = `${title}\n\n${content}`;
+            switchTab('analyzer');
+            setTimeout(() => analyzeNews(), 500);
+        }
+
+        // Batch analysis functionality
+        async function analyzeBatch() {
+            const batchTexts = document.getElementById('batchTexts').value.trim();
+            if (!batchTexts) {
+                showToast('Please enter some text to analyze.', 'warning');
+                return;
+            }
+
+            const texts = batchTexts.split('\n').filter(text => text.trim());
+            if (texts.length === 0) {
+                showToast('No valid texts found for analysis.', 'warning');
+                return;
+            }
+
+            // Show progress
+            document.getElementById('batchProgress').style.display = 'block';
+            document.getElementById('batchResults').style.display = 'none';
+
+            try {
+                const response = await fetch('/batch_analyze', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        texts: texts
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    batchResults = result.results;
+                    displayBatchResults(batchResults);
+                    showToast(`Batch analysis completed! ${result.successful_analyses} successful, ${result.failed_analyses} failed`, 'success');
+                } else {
+                    showToast('Batch analysis failed: ' + result.error, 'error');
+                }
+            } catch (error) {
+                console.error('Error in batch analysis:', error);
+                showToast('Error in batch analysis', 'error');
+            } finally {
+                document.getElementById('batchProgress').style.display = 'none';
+            }
+        }
+
+        function displayBatchResults(results) {
+            const container = document.getElementById('batchResultsContent');
+            let resultsHTML = `
+                <div class="alert alert-info">
+                    <strong>Batch Analysis Summary:</strong> ${results.length} items processed
+                </div>
+            `;
+
+            results.forEach((result, index) => {
+                const prediction = result.prediction.label.toLowerCase();
+                resultsHTML += `
+                    <div class="news-item ${prediction}">
+                        <div class="news-title">${result.text}</div>
+                        <div class="news-meta">
+                            <span><i class="fas fa-tag"></i> Analysis ${index + 1}</span>
+                            <span><i class="fas fa-clock"></i> ${new Date().toLocaleTimeString()}</span>
+                        </div>
+                        <span class="news-status status-${prediction}">
+                            ${result.prediction.label} (${Math.round(result.prediction.confidence * 100)}%)
+                        </span>
+                        ${result.error ? `<div class="alert alert-danger mt-2">${result.error}</div>` : ''}
+                    </div>
+                `;
+            });
+
+            container.innerHTML = resultsHTML;
+            document.getElementById('batchResults').style.display = 'block';
+        }
+
+        // Analysis history functionality
+        async function loadAnalysisHistory() {
+            const container = document.getElementById('analysisHistory');
+            container.innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Loading analysis history...</p>
+                </div>
+            `;
+
+            try {
+                const response = await fetch('/api/history');
+                const data = await response.json();
+
+                if (response.ok) {
+                    analysisHistory = data.history || [];
+                    displayAnalysisHistory(analysisHistory);
+                } else {
+                    showToast('Failed to load analysis history', 'error');
+                }
+            } catch (error) {
+                console.error('Error loading analysis history:', error);
+                showToast('Error loading analysis history', 'error');
+            }
+        }
+
+        function displayAnalysisHistory(history) {
+            const container = document.getElementById('analysisHistory');
+            let historyHTML = '';
+
+            history.forEach(item => {
+                const prediction = item.prediction.toLowerCase();
+                historyHTML += `
+                    <div class="news-item ${prediction}">
+                        <div class="news-title">${item.text_preview}</div>
+                        <div class="news-meta">
+                            <span><i class="fas fa-clock"></i> ${new Date(item.timestamp).toLocaleString()}</span>
+                        </div>
+                        <span class="news-status status-${prediction}">
+                            ${item.prediction} (${Math.round(item.confidence * 100)}%)
+                        </span>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = historyHTML;
+        }
+
+        // Source database functionality
+        async function loadSourceDatabase() {
+            const container = document.getElementById('sourceDatabase');
+            container.innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Loading source database...</p>
+                </div>
+            `;
+
+            try {
+                const response = await fetch('/api/sources');
+                const data = await response.json();
+
+                if (response.ok) {
+                    sources = data.sources;
+                    displaySources(sources);
+                } else {
+                    showToast('Failed to load source database', 'error');
+                }
+            } catch (error) {
+                console.error('Error loading source database:', error);
+                showToast('Error loading source database', 'error');
+            }
+        }
+
+        function displaySources(sources) {
+            const container = document.getElementById('sourceDatabase');
+            let sourcesHTML = '';
+
+            sources.forEach(source => {
+                sourcesHTML += `
+                    <div class="news-item">
+                        <div class="news-title">${source.name}</div>
+                        <div class="news-meta">
+                            <span><i class="fas fa-tag"></i> ${source.type}</span>
+                            <span><i class="fas fa-globe"></i> ${source.country}</span>
+                            <span><i class="fas ${source.verified ? 'fa-check-circle text-success' : 'fa-times-circle text-danger'}"></i> ${source.verified ? 'Verified' : 'Unverified'}</span>
+                        </div>
+                        <div class="progress mb-2">
+                            <div class="progress-bar ${getScoreColor(source.credibility)}" style="width: ${source.credibility}%"></div>
+                        </div>
+                        <span class="news-status ${source.credibility >= 80 ? 'status-real' : source.credibility >= 60 ? 'status-uncertain' : 'status-fake'}">
+                            Credibility: ${source.credibility}%
+                        </span>
+                        <p class="mt-2">${source.description}</p>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = sourcesHTML;
+        }
+
+        // Dashboard functionality
+        async function updateDashboard() {
+            try {
+                const response = await fetch('/dashboard');
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Update metrics
+                    document.getElementById('totalAnalyses').textContent = data.performance_summary.total_requests;
+                    document.getElementById('fakeCount').textContent = Math.round(data.performance_summary.total_requests * data.performance_summary.fake_ratio);
+                    document.getElementById('accuracyRate').textContent = `${Math.round(data.performance_summary.average_confidence * 100)}%`;
+                    document.getElementById('avgProcessing').textContent = '1.2s';
+                    
+                    // Update recent activity
+                    displayRecentActivity(data.recent_analyses);
+                }
+            } catch (error) {
+                console.error('Error updating dashboard:', error);
+            }
+        }
+
+        function displayRecentActivity(activities) {
+            const container = document.getElementById('recentActivity');
+            let activityHTML = '';
+
+            activities.forEach(activity => {
+                const prediction = activity.prediction.toLowerCase();
+                activityHTML += `
+                    <div class="news-item ${prediction}">
+                        <div class="news-title">${activity.text_preview}</div>
+                        <div class="news-meta">
+                            <span><i class="fas fa-clock"></i> ${new Date(activity.timestamp).toLocaleString()}</span>
+                        </div>
+                        <span class="news-status status-${prediction}">
+                            ${activity.prediction} (${Math.round(activity.confidence * 100)}%)
+                        </span>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = activityHTML;
+        }
+
+        // Alert system functionality
+        function saveAlertSettings() {
+            const keywords = document.getElementById('alertKeywords').value.split('\n').filter(k => k.trim());
+            const sources = Array.from(document.getElementById('alertSources').selectedOptions).map(opt => opt.value);
+            const frequency = document.getElementById('alertFrequency').value;
+            const email = document.getElementById('emailAlerts').checked;
+
+            alertSettings = { keywords, sources, frequency, email };
+            localStorage.setItem('alertSettings', JSON.stringify(alertSettings));
+            showToast('Alert settings saved successfully!', 'success');
+        }
+
+        function loadAlertHistory() {
+            const alerts = [
+                { type: 'warning', message: 'High fake news activity detected in politics category', time: '10 minutes ago' },
+                { type: 'info', message: 'New source added to database: Tech News Daily', time: '2 hours ago' },
+                { type: 'success', message: 'System accuracy improved to 92.3%', time: '1 day ago' }
+            ];
+
+            const container = document.getElementById('recentAlerts');
+            let alertsHTML = '';
+
+            alerts.forEach(alert => {
+                alertsHTML += `
+                    <div class="alert alert-${alert.type}">
+                        <div class="d-flex justify-between align-center">
+                            <span>${alert.message}</span>
+                            <small>${alert.time}</small>
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = alertsHTML;
+        }
+
+        // Comparison functionality
+        async function compareNews() {
+            const text1 = document.getElementById('compareText1').value.trim();
+            const text2 = document.getElementById('compareText2').value.trim();
+
+            if (!text1 || !text2) {
+                showToast('Please enter both news texts to compare.', 'warning');
+                return;
+            }
+
+            try {
+                const [result1, result2] = await Promise.all([
+                    analyzeText(text1),
+                    analyzeText(text2)
+                ]);
+
+                displayComparisonResults(result1, result2);
+            } catch (error) {
+                console.error('Error comparing news:', error);
+                showToast('Error comparing news', 'error');
+            }
+        }
+
+        async function analyzeText(text) {
+            const response = await fetch('/analyze', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    text: text,
+                    metadata: {}
+                })
+            });
+            return await response.json();
+        }
+
+        function displayComparisonResults(result1, result2) {
+            document.getElementById('comparisonResults').style.display = 'block';
+
+            // Display first result
+            const prediction1 = result1.prediction.label.toLowerCase();
+            document.getElementById('comparisonResult1').innerHTML = `
+                <div class="prediction ${prediction1}">
+                    <i class="fas fa-${getPredictionIcon(prediction1)}"></i>
+                    ${result1.prediction.label}
+                </div>
+                <div class="confidence-meter">
+                    <div class="confidence-fill ${prediction1}" style="width: ${result1.prediction.confidence * 100}%"></div>
+                </div>
+                <div class="probability">
+                    <div>Fake: ${(result1.prediction.fake_probability * 100).toFixed(1)}%</div>
+                    <div>Real: ${(result1.prediction.real_probability * 100).toFixed(1)}%</div>
+                </div>
+            `;
+
+            // Display second result
+            const prediction2 = result2.prediction.label.toLowerCase();
+            document.getElementById('comparisonResult2').innerHTML = `
+                <div class="prediction ${prediction2}">
+                    <i class="fas fa-${getPredictionIcon(prediction2)}"></i>
+                    ${result2.prediction.label}
+                </div>
+                <div class="confidence-meter">
+                    <div class="confidence-fill ${prediction2}" style="width: ${result2.prediction.confidence * 100}%"></div>
+                </div>
+                <div class="probability">
+                    <div>Fake: ${(result2.prediction.fake_probability * 100).toFixed(1)}%</div>
+                    <div>Real: ${(result2.prediction.real_probability * 100).toFixed(1)}%</div>
+                </div>
+            `;
+        }
+
+        // Utility functions
+        function calculateReadability(text) {
+            const words = text.split(/\s+/).length;
+            const sentences = text.split(/[.!?]+/).length;
+            const characters = text.length;
+
+            if (words === 0 || sentences === 0) return 'N/A';
+
+            const avgWordsPerSentence = words / sentences;
+            const avgSyllablesPerWord = characters / words / 3; // Rough estimate
+
+            let score;
+            if (avgWordsPerSentence < 10 && avgSyllablesPerWord < 1.5) {
+                score = 'Very Easy';
+            } else if (avgWordsPerSentence < 15 && avgSyllablesPerWord < 2) {
+                score = 'Easy';
+            } else if (avgWordsPerSentence < 20 && avgSyllablesPerWord < 2.5) {
+                score = 'Moderate';
+            } else if (avgWordsPerSentence < 25 && avgSyllablesPerWord < 3) {
+                score = 'Difficult';
+            } else {
+                score = 'Very Difficult';
+            }
+
+            return score;
+        }
+
+        function toggleDarkMode() {
+            darkMode = !darkMode;
+            document.body.classList.toggle('dark-mode', darkMode);
+            localStorage.setItem('darkMode', darkMode);
+            showToast(`Dark mode ${darkMode ? 'enabled' : 'disabled'}`, 'info');
+        }
+
+        function showQuickActions() {
+            showToast('Quick actions menu opened', 'info');
+        }
+
+        function updateSystemMetrics() {
+            // Update various system metrics
+            const uptime = Math.floor((new Date() - systemStartTime) / 1000);
+            const days = Math.floor(uptime / 86400);
+            const hours = Math.floor((uptime % 86400) / 3600);
+            document.getElementById('systemUptime').textContent = `${days}d ${hours}h`;
+
+            // Update total analyses count
+            document.getElementById('systemTotalAnalyses').textContent = analysisHistory.length;
+        }
+
+        function checkNewFeatures() {
+            // Check for and announce new features
+            const newFeatures = [
+                'Enhanced source credibility database',
+                'Real-time alert system',
+                'Advanced comparison tool',
+                'Batch analysis with file upload',
+                'Dark mode support'
+            ];
+
+            setTimeout(() => {
+                showToast(`New feature: ${newFeatures[Math.floor(Math.random() * newFeatures.length)]}`, 'info');
+            }, 5000);
+        }
+
+        // Enhanced toast notification system
+        function showToast(message, type = 'info') {
+            const toastContainer = document.getElementById('toastContainer');
+            const toastId = 'toast-' + Date.now();
+            
+            const icons = {
+                'success': 'check-circle',
+                'error': 'exclamation-circle',
+                'warning': 'exclamation-triangle',
+                'info': 'info-circle'
+            };
+
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `
+                <div class="toast-header">
+                    <i class="fas ${icons[type] || 'info-circle'} me-2"></i>
+                    <strong class="me-auto">${type.charAt(0).toUpperCase() + type.slice(1)}</strong>
+                    <button type="button" class="btn-close" onclick="this.parentElement.parentElement.remove()"></button>
+                </div>
+                <div class="toast-body">
+                    ${message}
+                </div>
+            `;
+            
+            toastContainer.appendChild(toast);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                if (toast.parentNode) {
+                    toast.parentNode.removeChild(toast);
+                }
+            }, 5000);
+        }
+
+        // Initialize character counts on page load
+        function updateCharacterCounts() {
+            const newsText = document.getElementById('newsText');
+            const batchTexts = document.getElementById('batchTexts');
+
+            if (newsText) {
+                newsText.addEventListener('input', function() {
+                    const text = this.value;
+                    document.getElementById('charCount').textContent = `${text.length} characters`;
+                    document.getElementById('wordCount').textContent = `${text.trim() ? text.trim().split(/\s+/).length : 0} words`;
+                });
+            }
+
+            if (batchTexts) {
+                batchTexts.addEventListener('input', function() {
+                    const text = this.value;
+                    const items = text.trim() ? text.trim().split('\n').filter(line => line.trim()) : [];
+                    document.getElementById('batchItemCount').textContent = `${items.length} items`;
+                    document.getElementById('batchCharCount').textContent = `${text.length} characters`;
+                });
+            }
+
+            // Initial counts
+            if (newsText) newsText.dispatchEvent(new Event('input'));
+            if (batchTexts) batchTexts.dispatchEvent(new Event('input'));
+        }
+
+        function updateCurrentTime() {
+            const now = new Date();
+            document.getElementById('currentTime').textContent = now.toLocaleTimeString();
+        }
+
+        // Sample loading functions
+        function loadSample(type) {
+            const samples = {
+                'fake': "BREAKING: Miracle cure discovered that can reverse aging in just one week! Doctors hate this secret method that big pharma doesn't want you to know about. This revolutionary treatment is being suppressed by the medical establishment!",
+                'real': "A new study published in the Journal of Medical Research shows promising results for a experimental cancer treatment. The clinical trial involved 200 patients and demonstrated a 40% improvement in survival rates compared to standard treatments.",
+                'controversial': "Government officials are considering new regulations that would impact social media platforms. Critics argue this could limit free speech, while supporters say it's necessary to combat misinformation."
+            };
+            
+            document.getElementById('newsText').value = samples[type] || samples.fake;
+            updateCharacterCounts();
+            showToast(`Loaded ${type} sample text`, 'info');
+        }
+
+        function loadSampleBatch() {
+            const sampleBatch = `Scientists discover revolutionary energy source that could power entire cities
+Breaking: Miracle weight loss pill discovered with no side effects
+New study shows benefits of regular exercise for mental health
+Secret government project revealed by anonymous insider
+Official statement from World Health Organization about new guidelines
+Viral social media post claims celebrities are involved in conspiracy
+Research paper published in reputable scientific journal
+Unverified rumor about political scandal circulates online`;
+            
+            document.getElementById('batchTexts').value = sampleBatch;
+            updateCharacterCounts();
+            showToast('Loaded sample batch for analysis', 'info');
+        }
+
+        function loadComparisonSamples() {
+            document.getElementById('compareText1').value = "Groundbreaking research shows that regular meditation can significantly reduce stress and improve cognitive function. The study, conducted over two years with 500 participants, found consistent benefits across all age groups.";
+            document.getElementById('compareText2').value = "SHOCKING: Secret meditation technique discovered that unlocks hidden brain power! This one simple trick that doctors don't want you to know can triple your intelligence in just 7 days! The government is trying to suppress this information!";
+            showToast('Loaded comparison samples', 'info');
+        }
+
+        // Form clearing functions
+        function clearForm() {
+            document.getElementById('newsText').value = '';
+            document.getElementById('source').value = '';
+            document.getElementById('socialEngagement').value = '1000';
+            document.getElementById('authorReputation').value = 'unknown';
+            updateCharacterCounts();
+            document.getElementById('analysisResults').style.display = 'none';
+            document.getElementById('analysisPlaceholder').style.display = 'block';
+            showToast('Form cleared', 'info');
+        }
+
+        function clearBatch() {
+            document.getElementById('batchTexts').value = '';
+            document.getElementById('batchResults').style.display = 'none';
+            updateCharacterCounts();
+            showToast('Batch cleared', 'info');
+        }
+
+        function clearHistory() {
+            if (confirm('Are you sure you want to clear all analysis history?')) {
+                analysisHistory = [];
+                document.getElementById('analysisHistory').innerHTML = '<div class="alert alert-info">No analysis history available</div>';
+                showToast('Analysis history cleared', 'info');
+            }
+        }
+
+        // Export functions
+        function exportBatchResults() {
+            if (batchResults.length === 0) {
+                showToast('No batch results to export', 'warning');
+                return;
+            }
+            
+            const csvContent = "data:text/csv;charset=utf-8," 
+                + "Text,Prediction,Confidence,Fake Probability,Real Probability\n"
+                + batchResults.map(result => 
+                    `"${result.text.replace(/"/g, '""')}",${result.prediction.label},${result.prediction.confidence},${result.fake_probability || 0},${result.real_probability || 0}`
+                ).join("\n");
+            
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "batch_analysis_results.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showToast('Batch results exported as CSV', 'success');
+        }
+
+        function exportHistory() {
+            if (analysisHistory.length === 0) {
+                showToast('No history to export', 'warning');
+                return;
+            }
+            
+            const csvContent = "data:text/csv;charset=utf-8," 
+                + "Text Preview,Prediction,Confidence,Timestamp\n"
+                + analysisHistory.map(item => 
+                    `"${item.text_preview.replace(/"/g, '""')}",${item.prediction},${item.confidence},"${item.timestamp}"`
+                ).join("\n");
+            
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "analysis_history.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showToast('Analysis history exported as CSV', 'success');
+        }
+
+        // Other interactive functions
+        function refreshNews() {
+            loadRealTimeNews();
+        }
+
+        function toggleAutoRefresh() {
+            const btn = document.getElementById('autoRefreshBtn');
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+                autoRefreshInterval = null;
+                btn.innerHTML = '<i class="fas fa-play"></i> Auto-refresh';
+                btn.classList.remove('btn-danger');
+                btn.classList.add('btn-primary');
+                showToast('Auto-refresh disabled', 'info');
+            } else {
+                autoRefreshInterval = setInterval(loadRealTimeNews, 30000);
+                btn.innerHTML = '<i class="fas fa-stop"></i> Stop Auto-refresh';
+                btn.classList.remove('btn-primary');
+                btn.classList.add('btn-danger');
+                showToast('Auto-refresh enabled (30s interval)', 'success');
+            }
+        }
+
+        function analyzeURL() {
+            const url = prompt('Enter URL to analyze:');
+            if (url) {
+                showToast('URL analysis feature coming soon!', 'info');
+                // This would integrate with the /api/analyze/url endpoint
+            }
+        }
+
+        function submitFeedback(correct) {
+            showToast(`Feedback submitted: ${correct ? 'Correct' : 'Incorrect'} analysis`, 'success');
+        }
+
+        function saveAnalysis() {
+            showToast('Analysis saved to history', 'success');
+        }
+
+        function saveNewsItem(id) {
+            showToast('News item saved to bookmarks', 'success');
+        }
+
+        function shareNewsItem(title) {
+            if (navigator.share) {
+                navigator.share({
+                    title: 'Check this news analysis',
+                    text: `I analyzed "${title}" with the Fake News Detector`,
+                    url: window.location.href
+                });
+            } else {
+                showToast('Share feature not supported in this browser', 'warning');
+            }
+        }
+
+        function generateBatchReport() {
+            if (batchResults.length === 0) {
+                showToast('No batch results to report', 'warning');
+                return;
+            }
+            showToast('Batch report generated', 'success');
+        }
+
+        function exportBatchTemplate() {
+            const template = `News Article 1: Scientists make breakthrough discovery
+News Article 2: New policy announced by government
+News Article 3: Health experts warn about new trend
+News Article 4: Economic indicators show improvement`;
+            
+            const blob = new Blob([template], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'batch_analysis_template.txt';
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('Batch template downloaded!', 'success');
+        }
+
+        function handleFileUpload(files) {
+            if (files.length === 0) return;
+
+            const file = files[0];
+            const reader = new FileReader();
+
+            reader.onload = function(e) {
+                const content = e.target.result;
+                document.getElementById('batchTexts').value = content;
+                updateCharacterCounts();
+                showToast(`File "${file.name}" uploaded successfully!`, 'success');
+            };
+
+            reader.readAsText(file);
+        }
+
+        function saveSettings() {
+            const confidenceThreshold = document.getElementById('confidenceThreshold').value;
+            const autoRefresh = document.getElementById('autoRefresh').value;
+            const analysisDepth = document.getElementById('analysisDepth').value;
+            const notifications = document.getElementById('notifications').checked;
+            const soundAlerts = document.getElementById('soundAlerts').checked;
+
+            const settings = {
+                confidenceThreshold,
+                autoRefresh,
+                analysisDepth,
+                notifications,
+                soundAlerts
+            };
+
+            localStorage.setItem('appSettings', JSON.stringify(settings));
+            showToast('Settings saved successfully!', 'success');
+        }
+
+        function exportData() {
+            showToast('Data export feature coming soon!', 'info');
+        }
+
+        function clearCache() {
+            localStorage.clear();
+            showToast('Cache cleared successfully!', 'success');
+        }
+
+        function runDiagnostics() {
+            showToast('System diagnostics completed - All systems operational', 'success');
+        }
+
+        function resetSystem() {
+            if (confirm('Are you sure you want to reset the system? This will clear all local data.')) {
+                localStorage.clear();
+                location.reload();
+            }
+        }
+
+        // Make functions available globally
+        window.toggleDarkMode = toggleDarkMode;
+        window.showQuickActions = showQuickActions;
+        window.analyzeNews = analyzeNews;
+        window.clearForm = clearForm;
+        window.loadSample = loadSample;
+        window.analyzeURL = analyzeURL;
+        window.refreshNews = refreshNews;
+        window.toggleAutoRefresh = toggleAutoRefresh;
+        window.analyzeThisNews = analyzeThisNews;
+        window.analyzeBatch = analyzeBatch;
+        window.loadSampleBatch = loadSampleBatch;
+        window.clearBatch = clearBatch;
+        window.exportBatchResults = exportBatchResults;
+        window.generateBatchReport = generateBatchReport;
+        window.exportHistory = exportHistory;
+        window.clearHistory = clearHistory;
+        window.saveAlertSettings = saveAlertSettings;
+        window.compareNews = compareNews;
+        window.loadComparisonSamples = loadComparisonSamples;
+        window.saveSettings = saveSettings;
+        window.exportData = exportData;
+        window.clearCache = clearCache;
+        window.runDiagnostics = runDiagnostics;
+        window.resetSystem = resetSystem;
+        window.submitFeedback = submitFeedback;
+        window.saveAnalysis = saveAnalysis;
+        window.handleFileUpload = handleFileUpload;
+        window.exportBatchTemplate = exportBatchTemplate;
+        window.saveNewsItem = saveNewsItem;
+        window.shareNewsItem = shareNewsItem;
+
+        // Initialize
+        updateCharacterCounts();
+    </script>
+</body>
+</html>

@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced Fake News Detector</title>
+    <style>
+        :root {
+            --primary: #3498db;
+            --secondary: #2ecc71;
+            --danger: #e74c3c;
+            --warning: #f39c12;
+            --dark: #2c3e50;
+            --light: #ecf0f1;
+            --gray: #95a5a6;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: var(--dark);
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+        
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 25px;
+            transition: transform 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .card h2 {
+            margin-bottom: 20px;
+            color: var(--primary);
+            border-bottom: 2px solid var(--light);
+            padding-bottom: 10px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        
+        textarea, input, select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            transition: border 0.3s;
+        }
+        
+        textarea {
+            min-height: 150px;
+            resize: vertical;
+        }
+        
+        textarea:focus, input:focus, select:focus {
+            border-color: var(--primary);
+            outline: none;
+        }
+        
+        .btn {
+            display: inline-block;
+            background: var(--primary);
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: background 0.3s;
+        }
+        
+        .btn:hover {
+            background: #2980b9;
+        }
+        
+        .btn-success {
+            background: var(--secondary);
+        }
+        
+        .btn-success:hover {
+            background: #27ae60;
+        }
+        
+        .results {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 5px;
+            background: var(--light);
+        }
+        
+        .prediction {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        
+        .prediction.real {
+            color: var(--secondary);
+        }
+        
+        .prediction.fake {
+            color: var(--danger);
+        }
+        
+        .confidence-meter {
+            height: 20px;
+            background: #ddd;
+            border-radius: 10px;
+            margin: 15px 0;
+            overflow: hidden;
+        }
+        
+        .confidence-fill {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.5s ease;
+        }
+        
+        .confidence-fill.real {
+            background: var(--secondary);
+        }
+        
+        .confidence-fill.fake {
+            background: var(--danger);
+        }
+        
+        .probability {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        
+        .explanation {
+            margin-top: 20px;
+        }
+        
+        .explanation h3 {
+            margin-bottom: 10px;
+            color: var(--dark);
+        }
+        
+        .explanation-list {
+            list-style-type: none;
+        }
+        
+        .explanation-list li {
+            padding: 10px;
+            margin-bottom: 8px;
+            background: white;
+            border-left: 4px solid var(--primary);
+            border-radius: 0 5px 5px 0;
+        }
+        
+        .component-analysis {
+            margin-top: 20px;
+        }
+        
+        .component-bar {
+            display: flex;
+            align-items: center;
+            margin: 8px 0;
+        }
+        
+        .component-name {
+            width: 150px;
+            font-weight: 600;
+        }
+        
+        .component-value {
+            flex: 1;
+            height: 20px;
+            background: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .component-fill {
+            height: 100%;
+            border-radius: 10px;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            display: none;
+        }
+        
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: var(--primary);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #ddd;
+            flex-wrap: wrap;
+        }
+        
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+        }
+        
+        .tab.active {
+            border-bottom-color: var(--primary);
+            font-weight: 600;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .dashboard-metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .metric-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .metric-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary);
+        }
+        
+        .alert {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border-left: 4px solid;
+        }
+        
+        .alert-warning {
+            background: rgba(243, 156, 18, 0.1);
+            border-left-color: var(--warning);
+            color: #b36a00;
+        }
+        
+        .alert-danger {
+            background: rgba(231, 76, 60, 0.1);
+            border-left-color: var(--danger);
+            color: #c0392b;
+        }
+        
+        .processing-time {
+            text-align: right;
+            font-size: 0.9rem;
+            color: var(--gray);
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Enhanced Fake News Detector</h1>
+            <p class="subtitle">Multi-modal analysis with explainable AI and continuous learning</p>
+        </header>
+        
+        <div class="tabs">
+            <div class="tab active" data-tab="analysis">News Analysis</div>
+            <div class="tab" data-tab="dashboard">Performance Dashboard</div>
+        </div>
+        
+        <div class="tab-content active" id="analysis-tab">
+            <div class="main-content">
+                <div class="card">
+                    <h2>News Input</h2>
+                    <div class="form-group">
+                        <label for="newsText">News Text:</label>
+                        <textarea id="newsText" placeholder="Enter news text here...">Scientists discover new species in the Amazon rainforest that can predict the future</textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="tweetCount">Tweet Count:</label>
+                        <input type="number" id="tweetCount" placeholder="Enter tweet count" value="150">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="source">Source:</label>
+                        <input type="text" id="source" placeholder="Enter news source" value="Daily Science News">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="author">Author:</label>
+                        <input type="text" id="author" placeholder="Enter author name" value="John Smith">
+                    </div>
+                    
+                    <button id="analyzeBtn" class="btn">Analyze News</button>
+                    
+                    <div class="loading" id="loadingIndicator">
+                        <div class="spinner"></div>
+                        <p>Analyzing content with multi-modal detection...</p>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h2>Analysis Results</h2>
+                    <div class="results">
+                        <div class="prediction real" id="predictionText">Prediction: Real</div>
+                        
+                        <div class="confidence-meter">
+                            <div class="confidence-fill real" id="confidenceBar" style="width: 80.46%"></div>
+                        </div>
+                        
+                        <div class="probability">
+                            <div>Fake Probability: <span id="fakeProb">19.54%</span></div>
+                            <div>Real Probability: <span id="realProb">80.46%</span></div>
+                        </div>
+                        
+                        <div class="component-analysis">
+                            <h3>Component Analysis</h3>
+                            <div class="component-bar">
+                                <div class="component-name">Source Credibility</div>
+                                <div class="component-value">
+                                    <div class="component-fill" style="width: 65%; background: #3498db;"></div>
+                                </div>
+                            </div>
+                            <div class="component-bar">
+                                <div class="component-name">Social Authenticity</div>
+                                <div class="component-value">
+                                    <div class="component-fill" style="width: 85%; background: #2ecc71;"></div>
+                                </div>
+                            </div>
+                            <div class="component-bar">
+                                <div class="component-name">Fact Check</div>
+                                <div class="component-value">
+                                    <div class="component-fill" style="width: 45%; background: #e74c3c;"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="explanation">
+                            <h3>AI Explanation</h3>
+                            <ul class="explanation-list" id="explanationList">
+                                <li>The claim appears to be a scientific statement rather than a factual news claim.</li>
+                                <li>No verifiable evidence was found to contradict the statement.</li>
+                                <li>Moderate tweet count suggests limited viral spread.</li>
+                                <li>Statement contains some sensational language but follows scientific reporting patterns.</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="processing-time" id="processingTime">
+                            Analysis completed in 2.3 seconds
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="tab-content" id="dashboard-tab">
+            <div class="card">
+                <h2>Performance Monitoring Dashboard</h2>
+                
+                <div class="dashboard-metrics">
+                    <div class="metric-card">
+                        <div class="metric-value" id="totalPredictions">0</div>
+                        <div>Total Predictions</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="avgConfidence">0%</div>
+                        <div>Avg Confidence</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="driftEvents">0</div>
+                        <div>Drift Events (24h)</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="systemStatus">Healthy</div>
+                        <div>System Status</div>
+                    </div>
+                </div>
+                
+                <h3>Recent Alerts</h3>
+                <div id="alertsContainer">
+                    <div class="alert alert-warning">
+                        <strong>Performance Note:</strong> System running normally
+                    </div>
+                </div>
+                
+                <div class="component-analysis">
+                    <h3>Feature Importance</h3>
+                    <div class="component-bar">
+                        <div class="component-name">Linguistic Patterns</div>
+                        <div class="component-value">
+                            <div class="component-fill" style="width: 85%; background: #3498db;"></div>
+                        </div>
+                    </div>
+                    <div class="component-bar">
+                        <div class="component-name">Source Analysis</div>
+                        <div class="component-value">
+                            <div class="component-fill" style="width: 78%; background: #2ecc71;"></div>
+                        </div>
+                    </div>
+                    <div class="component-bar">
+                        <div class="component-name">Social Signals</div>
+                        <div class="component-value">
+                            <div class="component-fill" style="width: 65%; background: #e74c3c;"></div>
+                        </div>
+                    </div>
+                    <div class="component-bar">
+                        <div class="component-name">Fact Checking</div>
+                        <div class="component-value">
+                            <div class="component-fill" style="width: 72%; background: #f39c12;"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <button id="refreshDashboard" class="btn" style="margin-top: 20px;">Refresh Dashboard</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Tab functionality
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                // Remove active class from all tabs and contents
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                
+                // Add active class to clicked tab and corresponding content
+                tab.classList.add('active');
+                const tabId = tab.getAttribute('data-tab') + '-tab';
+                document.getElementById(tabId).classList.add('active');
+            });
+        });
+        
+        // Analyze button functionality
+        document.getElementById('analyzeBtn').addEventListener('click', analyzeNews);
+        
+        // Refresh dashboard button
+        document.getElementById('refreshDashboard').addEventListener('click', refreshDashboard);
+        
+        // Function to analyze news
+        async function analyzeNews() {
+            const newsText = document.getElementById('newsText').value;
+            const tweetCount = parseInt(document.getElementById('tweetCount').value) || 0;
+            const source = document.getElementById('source').value;
+            const author = document.getElementById('author').value;
+            
+            // Show loading
+            document.getElementById('loadingIndicator').style.display = 'block';
+            
+            const metadata = {
+                tweetCount: tweetCount,
+                source: source,
+                author: author,
+                engagement: {
+                    retweets: tweetCount * 0.3,
+                    likes: tweetCount * 0.5,
+                    replies: tweetCount * 0.1,
+                    posts_per_hour: 2
+                }
+            };
+            
+            try {
+                const response = await fetch('/analyze', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        text: newsText,
+                        metadata: metadata
+                    })
+                });
+                
+                const result = await response.json();
+                
+                // Update UI with results
+                updateResults(result);
+                
+            } catch (error) {
+                console.error('Error analyzing news:', error);
+                alert('Error analyzing news. Please try again.');
+            } finally {
+                // Hide loading
+                document.getElementById('loadingIndicator').style.display = 'none';
+            }
+        }
+        
+        // Function to update results in UI
+        function updateResults(result) {
+            // Update prediction
+            const predictionElement = document.getElementById('predictionText');
+            predictionElement.textContent = `Prediction: ${result.prediction.charAt(0).toUpperCase() + result.prediction.slice(1)}`;
+            predictionElement.className = `prediction ${result.prediction}`;
+            
+            // Update confidence bar
+            const confidenceBar = document.getElementById('confidenceBar');
+            confidenceBar.className = `confidence-fill ${result.prediction}`;
+            confidenceBar.style.width = `${result.confidence}%`;
+            
+            // Update probabilities
+            document.getElementById('fakeProb').textContent = `${result.fake_probability.toFixed(2)}%`;
+            document.getElementById('realProb').textContent = `${result.real_probability.toFixed(2)}%`;
+            
+            // Update explanations
+            const explanationList = document.getElementById('explanationList');
+            explanationList.innerHTML = '';
+            result.explanations.forEach(exp => {
+                const li = document.createElement('li');
+                li.textContent = exp;
+                explanationList.appendChild(li);
+            });
+            
+            // Update processing time
+            document.getElementById('processingTime').textContent = 
+                `Analysis completed in ${result.processing_time.toFixed(2)} seconds`;
+            
+            // Update component analysis
+            updateComponentAnalysis(result.component_analysis);
+        }
+        
+        // Function to update component analysis bars
+        function updateComponentAnalysis(components) {
+            // This would update the component bars with actual values
+            console.log('Component analysis:', components);
+        }
+        
+        // Function to refresh dashboard
+        async function refreshDashboard() {
+            try {
+                const response = await fetch('/dashboard');
+                const data = await response.json();
+                
+                // Update dashboard metrics
+                document.getElementById('totalPredictions').textContent = 
+                    data.performance_summary.total_predictions;
+                document.getElementById('avgConfidence').textContent = 
+                    `${data.performance_summary.avg_confidence_7d.toFixed(1)}%`;
+                document.getElementById('driftEvents').textContent = 
+                    data.performance_summary.drift_events_24h;
+                
+                // Update alerts
+                const alertsContainer = document.getElementById('alertsContainer');
+                alertsContainer.innerHTML = '';
+                
+                if (data.alerts && data.alerts.length > 0) {
+                    data.alerts.forEach(alert => {
+                        const alertDiv = document.createElement('div');
+                        alertDiv.className = `alert alert-${alert.severity === 'HIGH' ? 'danger' : 'warning'}`;
+                        alertDiv.innerHTML = `<strong>${alert.type}:</strong> ${alert.message}`;
+                        alertsContainer.appendChild(alertDiv);
+                    });
+                } else {
+                    const alertDiv = document.createElement('div');
+                    alertDiv.className = 'alert alert-warning';
+                    alertDiv.innerHTML = '<strong>System Status:</strong> All systems operational';
+                    alertsContainer.appendChild(alertDiv);
+                }
+                
+            } catch (error) {
+                console.error('Error refreshing dashboard:', error);
+            }
+        }
+        
+        // Initialize dashboard on load
+        document.addEventListener('DOMContentLoaded', function() {
+            refreshDashboard();
+        });
+    </script>
+</body>
+</html>
