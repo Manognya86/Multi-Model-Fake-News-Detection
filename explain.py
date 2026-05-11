@@ -1,7 +1,9 @@
 import torch
+
 from transformers import BertTokenizer
 from models.multimodal_bert_model import UnifiedMultimodalModel
 from utils.preprocessing import extract_metadata_features
+
 import config
 import os
 
